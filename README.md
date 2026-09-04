@@ -100,10 +100,11 @@ The following architecture represents the implemented RecoverAI system and its s
 
 ### Architecture Layers
 
-Frontend: React.js. Manages the operations dashboard, transaction analysis, AI queue, recovery actions, and monitoring.Backend: Node.js + Express.js. Handles the API layer, orchestration, decision engine, recovery workflow, and audit logging.
-AI Engine: Python + FastAPI. Powers ML inference and recovery probability prediction.
-Database: MySQL. Stores transactions, customers, recovery actions, recovery attempts, users, and audit logs.
-Recovery Layer: Controlled Simulation. Demonstrates bounded payment recovery actions and outcomes.
+- **Frontend:** React.js — Manages the operations dashboard, transaction analysis, AI queue, recovery actions, and monitoring.
+- **Backend:** Node.js + Express.js — Handles the API layer, orchestration, decision engine, recovery workflow, and audit logging.
+- **AI Engine:** Python + FastAPI — Powers ML inference and recovery probability prediction.
+- **Database:** MySQL — Stores transactions, customers, recovery actions, recovery attempts, users, and audit logs.
+- **Recovery Layer:** Controlled Simulation — Demonstrates bounded payment recovery actions and outcomes.
 
 ### End-to-End Flow
 
@@ -141,11 +142,11 @@ The model learns from transaction-level attributes to distinguish transactions t
 
 ### Model Performance
 
-Accuracy: 70.34%
-Precision: 80.00%
-Recall: 66.00%
-F1 Score: 72.33%
-ROC-AUC: 0.7538
+- **Accuracy:** 70.34%
+- **Precision:** 80.00%
+- **Recall:** 66.00%
+- **F1 Score:** 72.33%
+- **ROC-AUC:** 0.7538
 
 These metrics are from the project's **synthetic demonstration dataset** and are not production Razorpay performance.
 
@@ -466,30 +467,47 @@ Version Control: Git, GitHub
 
 ```text
 recover-ai/
-│
 ├── frontend/
 │   ├── src/
+│   │   ├── pages/
+│   │   ├── App.jsx
+│   │   ├── App.css
+│   │   ├── api.js
+│   │   ├── index.css
+│   │   └── main.jsx
 │   ├── public/
 │   ├── package.json
 │   └── vite.config.js
 │
 ├── backend/
 │   ├── controllers/
+│   │   ├── dashboardController.js
+│   │   ├── recoveryController.js
+│   │   └── transactionController.js
 │   ├── routes/
+│   │   ├── aiRoutes.js
+│   │   ├── dashboardRoutes.js
+│   │   ├── recoveryRoutes.js
+│   │   └── transactionRoutes.js
 │   ├── services/
+│   │   ├── aiService.js
+│   │   └── recoveryEngine.js
 │   ├── database/
+│   │   └── db.js
 │   ├── server.js
 │   └── package.json
 │
 ├── ai-engine/
-│   ├── model/
 │   ├── data/
-│   ├── main.py
-│   ├── requirements.txt
-│   └── ...
+│   │   └── synthetic_transactions.csv
+│   ├── api.py
+│   ├── data_generator.py
+│   ├── decision_engine.py
+│   ├── evaluator.py
+│   └── ml_model.py
 │
 ├── database/
-│   └── ...
+│   └── recover_ai.sql
 │
 ├── docs/
 │   ├── system-architecture.png
@@ -497,9 +515,7 @@ recover-ai/
 │
 ├── .gitignore
 └── README.md
-```
 
-> Adjust inner file names if your final local project structure differs.
 
 -------------------------------------------------------------------------------------------------------------------------------------
 
