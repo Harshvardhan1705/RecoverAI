@@ -2,441 +2,669 @@
 
 > **Predict. Decide. Recover. With Control.**
 
-RecoverAI is an AI-powered revenue recovery system designed to identify failed or at-risk payment transactions, estimate their probability of successful recovery, recommend the right intervention, and execute recovery actions within deterministic safety guardrails.
+RecoverAI is an AI-powered revenue recovery system designed for the **Razorpay AI Buildathon — AI Revenue Recovery Track**.
 
-The core principle of RecoverAI is:
+The system identifies failed or at-risk transactions, predicts the probability of successful recovery, determines the safest recovery action, and executes only policy-approved actions with auditability and stopping rules.
 
-**AI predicts. Policy decides. Safety controls. Recovery executes. Audit records.**
+### Core Principle
+
+> **ML predicts. The Node.js decision and safety engine decides what is allowed.**
 
 ---
 
 ## 1. Problem Statement
 
-Payment failures and checkout issues can create significant revenue leakage for merchants.
+Payment failures, temporary banking issues, authentication failures, insufficient funds, and checkout interruptions can cause merchants to lose otherwise recoverable revenue.
 
-A failed payment does not always represent permanently lost revenue. Some failures may be recoverable through an appropriate retry, customer notification, or manual intervention.
+A conventional retry system treats failures similarly and may repeatedly retry transactions even when recovery is unlikely.
 
-However, blindly retrying every failed transaction can result in:
+RecoverAI addresses this problem by combining:
 
-- Unnecessary payment attempts
-- Poor customer experience
-- Repeated failures
-- Operational overhead
-- Increased recovery risk
-- Lack of control over automated actions
+- Machine learning-based recovery prediction
+- Transaction and failure analysis
+- Risk-aware decision making
+- Bounded automated recovery
+- Safety rules and stopping conditions
+- Recovery tracking
+- Audit logging
+- Revenue recovery analytics
 
-RecoverAI addresses this problem by combining machine learning, decision rules, safety guardrails, controlled recovery execution, revenue measurement, and auditability.
-
-The system answers three key questions:
+The goal is not simply to retry payments, but to determine:
 
 1. **Which transactions are worth recovering?**
 2. **What intervention should be used?**
-3. **When should automation stop?**
+3. **Should the system act automatically or escalate?**
+4. **When should the system stop?**
 
 ---
 
 ## 2. Solution Overview
 
-RecoverAI evaluates a failed or at-risk transaction through a controlled AI-assisted recovery pipeline.
+RecoverAI follows an end-to-end AI revenue recovery workflow:
 
 ```text
-                    FAILED / AT-RISK TRANSACTION
-                                |
-                                v
-                    TRANSACTION + CUSTOMER DATA
-                                |
-                                v
-                         PYTHON ML ENGINE
-                                |
-                                v
-                     RECOVERY PROBABILITY
-                                |
-                                v
-                      NODE.JS DECISION ENGINE
-                                |
-                                v
-                       SAFETY & POLICY CHECK
-                                |
-             +------------------+------------------+
-             |                  |                  |
-             v                  v                  v
-           RETRY              NOTIFY           ESCALATE
-             |
-             v
-       CONTROLLED RECOVERY
-             |
-             v
-      DATABASE STATE UPDATE
-             |
-             v
-        RECOVERY RESULT
-             |
-             v
-         AUDIT TRAIL
-
-The ML model does not directly execute a recovery action.
-
-Instead, the ML model produces a recovery probability. The backend decision engine evaluates that prediction together with transaction context and deterministic safety rules before allowing any recovery action.
-
-3. Key Capabilities
-AI-Based Recovery Prediction
-
-RecoverAI uses a Random Forest classifier to estimate the probability that a failed payment can be successfully recovered.
-
-Intelligent Decisioning
-
-The system converts the predicted recovery probability and payment failure context into a recommended intervention.
-
-Safety Guardrails
-
-Deterministic safety rules prevent unsafe automation, including repeated retries after the configured retry limit.
-
-Controlled Recovery Execution
-
-Allowed recovery actions are executed through a controlled simulation layer.
-
-Revenue Recovery Measurement
-
-The system measures revenue at risk, recovered revenue, recovery rate, recovery attempts, and action-level performance.
-
-AI Recovery Queue
-
-Transactions requiring attention are organized into an operational recovery queue.
-
-Transaction-Level Analysis
-
-Operators can inspect transaction amount, payment method, failure reason, retry count, recovery probability, recommended action, and safety status.
-
-Auditability
-
-Recovery decisions and execution outcomes are persisted for traceability and operational review.
-
-4. System Architecture
-
-The RecoverAI architecture separates the user interface, backend orchestration, machine learning inference, database persistence, and recovery execution responsibilities.
-
-Architecture Layers
-Frontend: React.js — Provides the operations dashboard, transaction analysis, AI recovery queue, recovery actions, and monitoring.
-Backend: Node.js + Express.js — Provides the API layer, orchestration, decision engine, recovery workflow, and audit logging.
-AI Engine: Python + FastAPI — Provides ML inference and recovery probability prediction.
-Database: MySQL — Stores transactions, customers, recovery actions, recovery attempts, users, and audit logs.
-Recovery Layer: Controlled Simulation — Demonstrates bounded recovery actions and simulated outcomes.
-End-to-End Flow
-A failed transaction is loaded by the backend.
-Transaction and customer context are prepared for inference.
-The Node.js AI service calls the Python FastAPI prediction endpoint.
-The Random Forest model returns a recovery probability.
-The Node.js decision engine evaluates the probability and failure type.
-The safety engine checks retry limits and automation eligibility.
-An allowed recovery action is executed through the controlled recovery workflow.
-Transaction and recovery state are persisted in MySQL.
-The decision and execution are written to the audit trail.
-5. AI / ML Approach
-
-RecoverAI uses a Random Forest Classifier to estimate the probability of successful payment recovery.
-
-Model Objective
-
-Target: Recovery success
-
-The model learns from transaction-level attributes to distinguish transactions that are more likely to be successfully recovered from those that are less likely to recover.
-
-Demonstration Dataset
-Dataset size: 5,000 synthetic transactions
-Observed outcomes: 3,404 transactions with recovery outcomes
-Successful recoveries: 2,000
-Failed recovery outcomes: 1,404
-Train/Test split: 2,723 / 681 observed transactions
-Model Performance
-Accuracy: 70.34%
-Precision: 80.00%
-Recall: 66.00%
-F1 Score: 72.33%
-ROC-AUC: 0.7538
-
-These metrics are from the project's synthetic demonstration dataset and are not production Razorpay performance.
-
-Feature Context
-
-The prediction pipeline uses transaction and customer/payment context, including:
-
-Transaction amount
-Payment method
-Failure code
-Retry count
-Customer historical success rate
-
-The model produces a recovery probability that is subsequently evaluated by the backend decision and safety layer.
-
-6. AI Decision & Safety Engine
-
-A central architectural principle of RecoverAI is the separation between prediction and execution.
-
-                         ML MODEL
-                            |
-                            v
-                  RECOVERY PROBABILITY
-                            |
-                            v
-                    DECISION ENGINE
-                            |
-                            v
-                     SAFETY ENGINE
-                            |
-              +-------------+-------------+
-              |             |             |
-              v             v             v
-            RETRY         NOTIFY       ESCALATE
-              |
-              v
-       CONTROLLED RECOVERY
-              |
-              v
-          AUDIT TRAIL
-Decision Policy
-Condition	Action	Automation
-Retry limit reached	STOP	Blocked
-Probability >= 70% + temporary bank failure	RETRY	Allowed
-Probability >= 50%	NOTIFY	Controlled follow-up
-Probability < 50%	ESCALATE	Manual review
-
-The configured maximum retry limit is 2 attempts.
-
-A high model probability cannot bypass deterministic safety constraints.
-
-Example Safety Override
-
-Recovery Probability: 78.24%
-
-Recommended Action: STOP
-
-Retry Count: 2 / 2
-
-Reason: Maximum retry limit reached.
-
-Automated recovery is blocked to prevent repeated payment attempts.
-
-This demonstrates that RecoverAI does not blindly execute a high-confidence model prediction. The safety engine has final control over whether an automated recovery action is permitted.
-
-7. Recovery Workflow
-                 FAILED TRANSACTION
-                         |
-                         v
-                    AI ANALYSIS
-                         |
-                         v
-                 RECOVERY DECISION
-                         |
-          +--------------+--------------+
-          |              |              |
-          v              v              v
-        RETRY          NOTIFY       ESCALATE
-          |
-          v
-      SAFETY CHECK
-          |
-          v
-   CONTROLLED ACTION
-          |
-       +--+--+
-       |     |
-       v     v
-  RECOVERED FAILED
-       |
-       v
-  AUDIT + METRICS
-
-For an automated retry:
-
-AI inference is requested.
-Recovery probability is calculated.
-Decision rules select the recommended action.
-Safety checks determine whether automation is permitted.
-The controlled recovery workflow executes the action.
-The transaction state is updated.
-Recovery attempt and action records are created.
-An audit event is persisted.
-8. Revenue Recovery Results
-
-RecoverAI evaluates recovery performance across the demonstration dataset.
-
-Overall Results
-Transactions evaluated: 5,000
-Revenue at risk: ₹16.84M
-Simulated recovered revenue: ₹6.77M
-Overall recovery rate: 40.21%
-Successful recoveries: 2,000
-Failed recovery outcomes: 1,404
-Transactions not attempted: 1,596
-
-These figures represent the project's synthetic demonstration environment and controlled recovery simulation.
-
-Action-Level Results
-Action	Transactions	Successful	Recovery Rate
-RETRY	1,353	1,111	82.11%
-NOTIFY	424	266	62.74%
-ESCALATE	1,627	623	38.29%
-STOP	1,596	-	-
-
-The results demonstrate how recovery opportunities can be prioritized while maintaining bounded automation.
-
-9. Dashboard
-
-The RecoverAI dashboard provides an operational view of payment recovery.
-
-It includes:
-
-Total transactions
-Revenue at risk
-Recovered revenue
-Recovery rate
-AI recovery queue
-Transaction-level recovery analysis
-Recommended recovery actions
-Recent recovery activity
-Recovery outcomes
-Audit information
-
-The dashboard is designed to help an operations team understand where revenue is at risk and which transactions require attention.
-
-10. Transaction Analysis
-
-Each transaction can be analyzed using payment and customer context.
-
-The system provides:
-
-Transaction amount
-Payment method
-Failure code
-Failure reason
-Retry count
-Customer historical success rate
-AI recovery probability
-Recommended recovery action
-Safety status
-Recovery execution result
-Example
-
-A transaction with:
-
-A temporary bank failure
-High recovery probability
-Retry count below the configured maximum
-
-may qualify for an automated retry.
-
-A transaction with a high recovery probability but an already exhausted retry limit is stopped by the safety engine.
-
-11. Recovery Actions
-
-RecoverAI supports four recovery action types.
-
-RETRY
-
-Used when the transaction has a high probability of recovery and the failure is considered temporarily recoverable.
-
-NOTIFY
-
-Used when customer interaction or follow-up may be appropriate.
-
-ESCALATE
-
-Used when automated recovery is not appropriate and manual intervention is required.
-
-STOP
-
-Used when further automation is not allowed, such as after reaching the retry limit.
-
-12. Auditability & Safety
-
-Every recovery execution is designed to leave an auditable record.
-
-The system records:
-
-Transaction reference
-Recovery action
-Recovery probability
-Action reason
-Execution result
-Recovery attempt
-Timestamp
-Actor
-Audit event
-
-The recovery lifecycle can therefore be traced as:
-
-Prediction
-    |
-    v
-Decision
-    |
-    v
-Safety Check
-    |
-    v
-Execution
-    |
-    v
+Transaction Failure
+        ↓
+Transaction Analysis
+        ↓
+AI Recovery Probability Prediction
+        ↓
+Node.js Decision Engine
+        ↓
+Safety & Policy Checks
+        ↓
+┌─────────────┬─────────────┬─────────────┬─────────────┐
+│    RETRY    │    NOTIFY   │   ESCALATE  │    STOP     │
+└─────────────┴─────────────┴─────────────┴─────────────┘
+        ↓
+Recovery Result
+        ↓
 Database Update
-    |
-    v
+        ↓
 Audit Log
+        ↓
+Revenue Recovery Analytics
+```
 
-The safety layer ensures that model confidence alone cannot trigger unlimited automated actions.
+The system separates **prediction from action**.
 
-13. Database Design
+The Python AI engine predicts recovery probability, while the Node.js decision and safety engine determines whether an action is permitted.
 
-RecoverAI uses MySQL for persistent application and recovery state.
+---
 
-Core Tables
+## 3. Key Capabilities
+
+### AI-Powered Recovery Prediction
+
+A Random Forest classifier predicts the probability that a failed transaction can be successfully recovered.
+
+### Intelligent Action Selection
+
+The system chooses between:
+
+- `RETRY`
+- `NOTIFY`
+- `ESCALATE`
+- `STOP`
+
+### Safety Controls
+
+Recovery actions are bounded by deterministic business rules.
+
+Examples include:
+
+- Maximum retry limit
+- Failure-type restrictions
+- Recovery probability thresholds
+- Duplicate recovery protection
+- Manual escalation for uncertain cases
+
+### Transaction Analysis
+
+Each transaction contains:
+
+- Transaction amount
+- Payment method
+- Transaction status
+- Failure code
+- Failure reason
+- Retry count
+- AI recovery probability
+- AI recommendation
+
+### Auditability
+
+Every recovery action can be recorded with:
+
+- Transaction ID
+- Action type
+- Reason
+- Recovery probability
+- Result
+- Timestamp
+- Actor
+
+### Revenue Analytics
+
+The dashboard provides an overview of:
+
+- Total transactions
+- Failed transactions
+- Recovered transactions
+- Revenue at risk
+- Simulated revenue recovered
+- Recovery rate
+- Recovery action performance
+
+---
+
+## 4. System Architecture
+
+![RecoverAI System Architecture](docs/system-architecture.png)
+
+### Architecture Flow
+
+```text
+┌───────────────────────────┐
+│      React Frontend       │
+│   Dashboard & Analysis    │
+└─────────────┬─────────────┘
+              │
+              ↓
+┌───────────────────────────┐
+│    Node.js + Express      │
+│      Backend API          │
+└─────────────┬─────────────┘
+              │
+       ┌──────┴──────┐
+       ↓             ↓
+┌─────────────┐  ┌──────────────────┐
+│    MySQL    │  │ Python FastAPI   │
+│  Database   │  │   AI / ML Engine │
+└─────────────┘  └────────┬─────────┘
+                           │
+                           ↓
+                  ┌──────────────────┐
+                  │ Random Forest ML  │
+                  │ Recovery Model    │
+                  └────────┬─────────┘
+                           │
+                           ↓
+                  ┌──────────────────┐
+                  │ Node Decision &  │
+                  │ Safety Engine    │
+                  └────────┬─────────┘
+                           │
+                           ↓
+                  Recovery Action
+                           │
+                           ↓
+                     Audit Log
+```
+
+### Architectural Principle
+
+The frontend does not directly decide whether a transaction should be recovered.
+
+The architecture follows:
+
+```text
+Frontend
+   ↓
+Backend
+   ↓
+AI Prediction
+   ↓
+Decision Engine
+   ↓
+Safety Rules
+   ↓
+Recovery Action
+   ↓
+Database + Audit Log
+```
+
+This provides separation between:
+
+- User interface
+- Business logic
+- AI inference
+- Safety enforcement
+- Persistence
+- Auditability
+
+---
+
+## 5. AI / ML Approach
+
+RecoverAI uses a **Random Forest Classifier** to predict the probability of successful payment recovery.
+
+The model is trained using **5,000 synthetic transactions**.
+
+### Model Results
+
+![RecoverAI ML Results](docs/ml-results.png)
+
+The model achieved:
+
+| Metric | Result |
+|---|---:|
+| Accuracy | **70.34%** |
+| Precision | **80.00%** |
+| F1 Score | **72.33%** |
+| ROC-AUC | **0.7538** |
+
+These predictions are used by the decision engine to identify potentially recoverable transactions.
+
+### Important Design Principle
+
+The ML model does **not** directly execute recovery actions.
+
+Instead:
+
+```text
+ML Model
+   ↓
+Recovery Probability
+   ↓
+Node Decision Engine
+   ↓
+Safety Rules
+   ↓
+Allowed / Blocked Action
+```
+
+This prevents an AI prediction from bypassing business constraints.
+
+---
+
+## 6. AI Decision & Safety Engine
+
+RecoverAI uses deterministic decision rules after AI prediction.
+
+### Decision Rules
+
+| Condition | Recommended Action | Automation |
+|---|---|---|
+| Retry limit reached | `STOP` | Blocked |
+| Probability >= 70% + temporary bank failure | `RETRY` | Allowed |
+| Probability >= 50% | `NOTIFY` | Controlled follow-up |
+| Probability < 50% | `ESCALATE` | Manual review |
+
+### Maximum Retry Limit
+
+The system allows a maximum of:
+
+```text
+2 retry attempts
+```
+
+If the retry limit is reached, the transaction is automatically blocked from further automated recovery.
+
+### Safety Override Example
+
+Consider a transaction with:
+
+```text
+Recovery Probability = 78.24%
+Retry Count = 2
+Maximum Retry Limit = 2
+```
+
+Although the AI predicts a high recovery probability, the safety engine returns:
+
+```text
+Action = STOP
+Automation = BLOCKED
+Reason = Maximum retry limit reached
+```
+
+This demonstrates that **safety policy takes precedence over model confidence**.
+
+---
+
+## 7. Recovery Workflow
+
+The recovery workflow is:
+
+```text
+1. Failed transaction enters the recovery queue
+              ↓
+2. Transaction features are collected
+              ↓
+3. Python ML engine predicts recovery probability
+              ↓
+4. Node.js decision engine evaluates the prediction
+              ↓
+5. Safety rules are applied
+              ↓
+6. Recovery action is selected
+              ↓
+7. Action is executed if permitted
+              ↓
+8. Transaction status is updated
+              ↓
+9. Recovery result is stored
+              ↓
+10. Audit event is created
+              ↓
+11. Dashboard metrics are updated
+```
+
+### Example Recovery Scenario
+
+For a temporary bank timeout:
+
+```text
+Failure Code = BANK_TIMEOUT
+Recovery Probability = High
+Retry Count = 0
+```
+
+The decision engine can select:
+
+```text
+RETRY
+```
+
+If the simulated retry succeeds:
+
+```text
+Transaction Status → RECOVERED
+Recovery Action → SUCCESS
+Amount Recovered → Recorded
+Audit Log → Created
+```
+
+---
+
+## 8. Revenue Recovery Results
+
+The dashboard evaluates the recovery opportunity using synthetic transaction data.
+
+### Overall Results
+
+| Metric | Result |
+|---|---:|
+| Total Transactions | **5,000** |
+| Revenue at Risk | **₹16.84M** |
+| Simulated Revenue Recovered | **₹6.77M** |
+| Recovery Rate | **40.21%** |
+| Successful Transactions | **2,000** |
+| Failed Transactions | **1,404** |
+| Not Attempted | **1,596** |
+
+These results demonstrate how AI-assisted decision making can prioritize recovery opportunities while preventing unnecessary or unsafe retries.
+
+### Action-Level Results
+
+| Action | Transactions | Successful Recoveries | Success Rate |
+|---|---:|---:|---:|
+| `RETRY` | 1,353 | 1,111 | **82.11%** |
+| `NOTIFY` | 424 | 266 | **62.74%** |
+| `ESCALATE` | 1,627 | 623 | **38.29%** |
+| `STOP` | 1,596 | — | — |
+
+The results show that high-probability temporary failures are strong candidates for automated retry, while lower-confidence cases can be notified or escalated instead.
+
+---
+
+## 9. Dashboard
+
+The RecoverAI dashboard provides a centralized view of revenue recovery performance.
+
+The dashboard displays:
+
+- Total transactions
+- Failed transactions
+- Recovered transactions
+- Revenue at risk
+- Revenue recovered
+- Recovery rate
+- Recovery queue
+- Recent recovery activity
+- AI recommendations
+
+The interface is designed to allow a merchant or operator to quickly identify:
+
+```text
+What failed?
+     ↓
+Why did it fail?
+     ↓
+Can it be recovered?
+     ↓
+What does AI recommend?
+     ↓
+Is automation allowed?
+     ↓
+What happened after recovery?
+```
+
+---
+
+## 10. Transaction Analysis
+
+Each transaction can be analyzed individually.
+
+The transaction analysis view provides:
+
+- Transaction reference
+- Customer
+- Amount
+- Payment method
+- Current status
+- Failure code
+- Failure reason
+- Retry count
+- AI recovery probability
+- AI recommendation
+
+Example:
+
+```text
+Transaction: TXN-DEMO-RECOVER
+Amount: ₹3,500
+Payment Method: UPI
+Failure Code: BANK_TIMEOUT
+Retry Count: 0
+AI Recommendation: RETRY
+```
+
+The transaction can then be sent through the recovery workflow.
+
+---
+
+## 11. Recovery Actions
+
+RecoverAI supports four primary recovery actions.
+
+### RETRY
+
+Used for high-probability temporary payment failures.
+
+Typical examples:
+
+```text
+BANK_TIMEOUT
+BANK_ERROR
+```
+
+### NOTIFY
+
+Used when the transaction may require customer intervention.
+
+The system can recommend notification instead of automatically retrying.
+
+### ESCALATE
+
+Used when the transaction requires manual review or when recovery confidence is low.
+
+### STOP
+
+Used when automation must not continue.
+
+Examples include:
+
+```text
+Retry limit reached
+Unsafe repeated retry
+Recovery policy restriction
+```
+
+---
+
+## 12. Auditability & Safety
+
+RecoverAI is designed around controlled automation.
+
+### Safety Principles
+
+#### 1. Bounded Automation
+
+Automated recovery is permitted only when policy conditions are satisfied.
+
+#### 2. Retry Limit
+
+The maximum retry count prevents unlimited automated attempts.
+
+#### 3. Duplicate Protection
+
+A transaction that has already been successfully recovered cannot be recovered again through the same workflow.
+
+#### 4. Deterministic Decision Layer
+
+The AI prediction is evaluated by deterministic Node.js rules before action execution.
+
+#### 5. Audit Trail
+
+Recovery events are stored for traceability.
+
+Example audit event:
+
+```text
+Event Type:
+RECOVERY_EXECUTED
+
+Actor:
+AI_ENGINE
+
+Description:
+Simulated RETRY SUCCESS.
+Amount recovered: ₹2800.00
+```
+
+### AI + Safety Separation
+
+```text
+             AI Prediction
+                   ↓
+          Recovery Probability
+                   ↓
+       ┌──────────────────────┐
+       │ Node Decision Engine │
+       └──────────┬───────────┘
+                  ↓
+       ┌──────────────────────┐
+       │   Safety Policies    │
+       └──────────┬───────────┘
+                  ↓
+       ┌──────────────────────┐
+       │ Allowed / Blocked    │
+       └──────────┬───────────┘
+                  ↓
+           Recovery Action
+```
+
+This architecture ensures that the model cannot independently bypass safety constraints.
+
+---
+
+## 13. Database Design
+
+RecoverAI uses **MySQL 8**.
+
+The database is named:
+
+```text
+recover_ai
+```
+
+### Tables
+
+```text
 users
-
-Stores merchant and administrator accounts.
-
 customers
-
-Stores customer identity and historical transaction success information.
-
 transactions
-
-Stores payment transaction details, failure information, recovery probability, recommendation, status, and retry count.
-
 recovery_actions
-
-Stores the recovery action selected or executed for a transaction.
-
 recovery_attempts
-
-Stores individual recovery attempts and their outcomes.
-
 audit_logs
+```
 
-Stores recovery-related audit events for traceability.
+### Customers
 
-Database Relationship
-CUSTOMERS
-    |
-    | 1 : N
-    v
-TRANSACTIONS
-    |
-    +-------------------------+
-    |                         |
-    | 1 : N                   | 1 : N
-    v                         v
-RECOVERY_ACTIONS       RECOVERY_ATTEMPTS
-    |
-    |
-    +-------------------------+
-                              |
-                              v
-                         AUDIT_LOGS
+Stores customer-level transaction statistics.
 
-The SQL schema and demonstration data are provided in:
+Important fields include:
 
+```text
+customer_ref
+name
+email
+total_transactions
+successful_transactions
+failed_transactions
+success_rate
+```
+
+### Transactions
+
+Stores payment transaction information.
+
+Important fields include:
+
+```text
+transaction_ref
+customer_id
+amount
+payment_method
+status
+failure_code
+failure_reason
+retry_count
+recovery_probability
+ai_recommendation
+```
+
+### Recovery Actions
+
+Stores the decision and execution details.
+
+```text
+transaction_id
+action_type
+reason
+recovery_probability
+executed_at
+result
+```
+
+### Recovery Attempts
+
+Stores individual recovery attempts.
+
+```text
+transaction_id
+attempt_number
+action_type
+status
+amount_recovered
+attempted_at
+```
+
+### Audit Logs
+
+Stores important system events.
+
+```text
+transaction_id
+event_type
+description
+actor
+created_at
+```
+
+The SQL schema and seed data are available in:
+
+```text
 database/recover_ai.sql
+```
 
-14. Project Structure
+---
+
+## 14. Project Structure
+
+```text
 recover-ai/
 ├── frontend/
 │   ├── src/
@@ -489,258 +717,465 @@ recover-ai/
 │
 ├── .gitignore
 └── README.md
-15. API Endpoints
-Transaction APIs
+```
+
+---
+
+## 15. API Endpoints
+
+### Transactions
+
+```text
 GET /api/transactions
+```
+
+Returns transaction data for the dashboard and recovery queue.
+
+```text
 GET /api/transactions/:id
+```
 
-Used to retrieve transaction and recovery information.
+Returns details of a specific transaction.
 
-Dashboard API
+### Dashboard
+
+```text
 GET /api/dashboard
+```
 
-Provides dashboard-level recovery and revenue metrics.
+Returns dashboard revenue recovery metrics.
 
-Recovery API
+### Recovery
+
+```text
 POST /api/recovery/:transactionId
+```
 
-Triggers the controlled recovery workflow for a transaction.
+Executes the recovery workflow for a transaction after applying AI and safety rules.
 
-AI API
+### AI Prediction
+
+```text
 POST /api/ai/predict
+```
 
-Requests recovery probability prediction from the Python AI engine.
+Sends transaction features to the Python AI engine and returns a recovery probability and recommendation.
 
-FastAPI Documentation
+---
 
-The Python FastAPI service exposes interactive API documentation through its Swagger interface during local development.
+## 16. Technology Stack
 
-16. Technology Stack
-Frontend
-React.js
-Vite
-Tailwind CSS
-Recharts
-Lucide React
-Framer Motion
-Axios
-Backend
-Node.js
-Express.js
-AI / Machine Learning
-Python
-FastAPI
-Scikit-learn
-Random Forest Classifier
-Database
-MySQL 8
-Development & Testing
-VS Code
-Git
-GitHub
-Postman
-17. Local Setup
-Prerequisites
+### Frontend
 
-Install:
+- React.js
+- Vite
+- Tailwind CSS
+- Recharts
+- Lucide React
+- Framer Motion
+- Axios
 
-Node.js
-npm
-Python 3.x
-MySQL 8
-Git
-Clone the Repository
+### Backend
+
+- Node.js
+- Express.js
+
+### AI / ML
+
+- Python
+- FastAPI
+- Scikit-learn
+- Random Forest Classifier
+
+### Database
+
+- MySQL 8
+
+### Development & Testing
+
+- Visual Studio Code
+- Git
+- GitHub
+- Postman
+
+---
+
+## 17. Local Setup
+
+### 1. Clone Repository
+
+```bash
 git clone https://github.com/Harshvardhan1705/RecoverAI.git
 cd RecoverAI
-Database Setup
+```
 
-Use the SQL file:
+### 2. Configure MySQL
 
+Create the database using:
+
+```text
 database/recover_ai.sql
+```
 
-The SQL file creates the RecoverAI database, tables, relationships, and demonstration data.
+The SQL file creates the required database, tables, relationships, and synthetic seed data.
 
-Backend Setup
+### 3. Start Backend
+
+```bash
 cd backend
 npm install
-
-Configure the database connection using the required backend environment variables.
-
-Start the backend:
-
 node server.js
-AI Engine Setup
+```
 
-Open a new terminal:
+The backend runs on:
 
-cd ai-engine
-python -m venv venv
+```text
+http://localhost:5000
+```
 
-Activate the virtual environment and install the required Python dependencies.
-
-Start the FastAPI service:
-
-python api.py
-
-The AI engine provides the prediction API used by the Node.js backend.
-
-Frontend Setup
+### 4. Start AI Engine
 
 Open another terminal:
 
+```bash
+cd ai-engine
+python -m venv venv
+```
+
+Activate the virtual environment on Windows:
+
+```bash
+venv\Scripts\activate
+```
+
+Install dependencies:
+
+```bash
+pip install fastapi uvicorn scikit-learn pandas numpy
+```
+
+Start the AI service:
+
+```bash
+python api.py
+```
+
+The FastAPI service runs on:
+
+```text
+http://127.0.0.1:8000
+```
+
+FastAPI documentation is available at:
+
+```text
+http://127.0.0.1:8000/docs
+```
+
+### 5. Start Frontend
+
+Open another terminal:
+
+```bash
 cd frontend
 npm install
 npm run dev
+```
 
-The Vite development server will provide the RecoverAI dashboard.
+The frontend will be available through the Vite development server.
 
-18. Demonstration Scenarios
-Scenario 1 — Automated Recovery
+---
 
-A failed transaction has:
+## 18. Demonstration Scenarios
 
-High recovery probability
-Temporary bank failure
-Retry count below the maximum
+### Scenario 1 — High Probability Recovery
 
-RecoverAI recommends RETRY and allows the controlled recovery workflow to execute.
+Example transaction:
 
-Scenario 2 — Safety Override
+```text
+Transaction: TXN-DEMO-RECOVER
+Amount: ₹3,500
+Payment Method: UPI
+Failure Code: BANK_TIMEOUT
+Retry Count: 0
+```
 
-A transaction has:
+AI prediction:
 
-High recovery probability
-Retry count already at the maximum
+```text
+Recovery Probability ≈ 79.53%
+Recommendation = RETRY
+```
 
-RecoverAI recommends STOP because the safety policy blocks another automated attempt.
+The decision engine permits the automated retry because:
 
-Scenario 3 — Manual Escalation
+```text
+Probability >= 70%
+AND
+Failure Type = Temporary Bank Failure
+AND
+Retry Count < 2
+```
 
-A transaction has:
+The simulated recovery succeeds and the transaction becomes:
 
-Low recovery probability
-A failure type unsuitable for automated recovery
+```text
+RECOVERED
+```
 
-RecoverAI recommends ESCALATE for manual review.
+The system records:
 
-19. Demo Video
-RecoverAI — AI Revenue Recovery Demo
+```text
+Recovery Action
+Recovery Attempt
+Amount Recovered
+Audit Log
+```
 
-The demo demonstrates the complete product workflow, including:
+### Scenario 2 — Safety Override
 
-Problem and solution
-System architecture
-Recovery dashboard
-AI recovery queue
-Transaction analysis
-AI recovery probability
-Automated recovery simulation
-Safety override
-Recent activity and audit trail
-ML model performance
+Example transaction:
 
-Demo Video: **Demo Video:** [Watch the RecoverAI Demo](https://drive.google.com/file/d/18uwSPIXzokeS1BfITFzu8G1-2viVMj8G/view?usp=drive_link)
+```text
+Transaction: TXN-1096
+Recovery Probability: 78.24%
+Retry Count: 2
+```
 
-20. Buildathon Track Alignment
+The AI confidence is high, but the safety engine blocks another retry:
 
-RecoverAI is designed for the AI Revenue Recovery track.
+```text
+Action = STOP
+Automation = BLOCKED
+Reason = Maximum retry limit reached
+```
 
+This demonstrates the system's safety-first architecture.
+
+---
+
+## 19. Demo Video
+
+**Demo Video:** [Watch the RecoverAI Demo](https://drive.google.com/file/d/18uwSPIXzokeS1BfITFzu8G1-2viVMj8G/view?usp=drive_link)
+
+The demo covers:
+
+```text
+Dashboard
+   ↓
+System Architecture
+   ↓
+AI Recovery Queue
+   ↓
+Transaction Analysis
+   ↓
+AI Prediction
+   ↓
+Recovery Execution
+   ↓
+Safety Override
+   ↓
+Recent Activity & Audit Trail
+   ↓
+ML Results
+```
+
+---
+
+## 20. Buildathon Track Alignment
+
+RecoverAI is designed for the **AI Revenue Recovery** track.
+
+The solution addresses the core revenue recovery workflow:
+
+```text
 Detect Revenue at Risk
+        ↓
+Predict Recovery Probability
+        ↓
+Determine Appropriate Intervention
+        ↓
+Apply Safety Constraints
+        ↓
+Execute Bounded Recovery
+        ↓
+Measure Recovery
+        ↓
+Record Audit Trail
+```
 
-The system analyzes failed transactions and estimates the probability of successful recovery.
+### Revenue at Risk
 
-Determine the Right Intervention
+The system identifies failed transactions and calculates the revenue opportunity associated with them.
 
-The decision engine maps AI predictions and transaction context to:
+### Right Intervention
 
+The decision engine determines whether the appropriate intervention is:
+
+```text
 RETRY
 NOTIFY
 ESCALATE
 STOP
-Execute a Bounded Recovery Workflow
+```
 
-Allowed recovery actions are executed through a controlled simulation with deterministic safety rules.
+### Bounded Recovery
 
-Stopping Rules
+Automated recovery is constrained by:
 
-The system enforces a maximum retry limit and blocks further automated attempts when that limit is reached.
+```text
+Probability Thresholds
+Failure-Type Rules
+Retry Limits
+Duplicate Protection
+Safety Overrides
+```
 
-Measure Money Recovered
+### Measurable Recovery
 
 The dashboard tracks:
 
-Revenue at risk
-Recovered revenue
-Recovery rate
-Recovery attempts
-Action-level recovery performance
-Audit Trail
+```text
+Revenue at Risk
+Revenue Recovered
+Recovery Rate
+Successful Recoveries
+Action-Level Performance
+```
 
-Recovery actions and execution outcomes are persisted for traceability.
+### Auditability
 
-21. AI + Safety Architecture
+Recovery actions and important system events are recorded in the database.
 
-RecoverAI follows a layered approach in which machine learning provides intelligence while deterministic controls govern execution.
+---
 
-                  AI PREDICTION
-                       |
-                       v
-                DECISION ENGINE
-                       |
-                       v
-                 SAFETY ENGINE
-                       |
-          +------------+------------+
-          |            |            |
-          v            v            v
-        RETRY        NOTIFY      ESCALATE
-          |
-          v
-     CONTROLLED
-      RECOVERY
-          |
-          v
-      AUDIT TRAIL
+## 21. AI + Safety Architecture
 
-This design ensures that AI intelligence is combined with deterministic controls.
+RecoverAI follows an **AI-assisted but policy-controlled architecture**.
 
-The model can recommend an action, but the safety layer determines whether the action is actually permitted.
+```text
+                 ┌────────────────────┐
+                 │   Transaction      │
+                 │      Failure       │
+                 └─────────┬──────────┘
+                           ↓
+                 ┌────────────────────┐
+                 │   Feature Input    │
+                 └─────────┬──────────┘
+                           ↓
+                 ┌────────────────────┐
+                 │  Random Forest ML   │
+                 │      Model         │
+                 └─────────┬──────────┘
+                           ↓
+                 ┌────────────────────┐
+                 │ Recovery Probability│
+                 └─────────┬──────────┘
+                           ↓
+                 ┌────────────────────┐
+                 │ Decision Engine    │
+                 └─────────┬──────────┘
+                           ↓
+                 ┌────────────────────┐
+                 │ Safety & Policy     │
+                 │      Engine         │
+                 └─────────┬──────────┘
+                           ↓
+          ┌────────────────┼────────────────┐
+          ↓                ↓                ↓
+       Allowed          Blocked          Escalated
+          ↓                ↓                ↓
+       Recovery           STOP          Manual Review
+          ↓
+    Database + Audit
+```
 
-22. Future Scope
+### Why This Architecture?
 
-RecoverAI can be extended with:
+A machine learning model is probabilistic.
 
-Direct payment gateway integration
-Real-time payment event ingestion
-Production-grade customer notification workflows
-Advanced recovery models
-Model monitoring and drift detection
-Merchant-specific recovery policies
-Explainable AI for recovery predictions
-Adaptive retry timing
-Multi-channel recovery orchestration
-Real-time revenue recovery analytics
+Business and financial actions require deterministic controls.
 
-The current implementation intentionally uses a controlled recovery simulation rather than executing real payment operations.
+Therefore:
 
-23. Disclaimer
+```text
+AI = Prediction
+Decision Engine = Business Logic
+Safety Engine = Control
+Database = State
+Audit Log = Traceability
+```
 
-RecoverAI is a buildathon prototype created to demonstrate AI-driven revenue recovery concepts.
+This separation improves reliability, explainability, and operational safety.
 
-The project uses synthetic demonstration data and a controlled recovery simulation.
+---
 
-It does not process real customer payment information or execute real payment transactions.
+## 22. Future Scope
 
-The ML performance metrics shown in this README are demonstration results and should not be interpreted as production payment recovery performance.
+Potential future improvements include:
 
-24. Conclusion
+- Real Razorpay payment gateway integration
+- Real-time webhook processing
+- Production-grade payment retry orchestration
+- More advanced ML models
+- Customer segmentation
+- Personalized recovery messaging
+- Subscription recovery
+- Checkout abandonment prediction
+- Adaptive retry timing
+- Fraud-aware recovery policies
+- Merchant-specific recovery strategies
+- Reinforcement learning for intervention optimization
+- Real-time revenue recovery monitoring
+- Advanced observability and alerting
 
-RecoverAI demonstrates how AI can be used to move beyond simply detecting payment failures toward an intelligent, controlled revenue recovery workflow.
+---
 
-The system combines:
+## 23. Disclaimer
 
-Predict → Decide → Apply Safety → Recover → Measure → Audit
+RecoverAI is a **buildathon prototype** using synthetic transaction data and simulated recovery outcomes.
 
-The key principle is:
+It does not process real customer payment information or execute real financial transactions.
 
-AI recommends. Policy controls. Recovery executes. Audit records.
+The recovery execution shown in the prototype is intentionally simulated for demonstration purposes.
+
+---
+
+## 24. Conclusion
+
+RecoverAI demonstrates how AI can be combined with deterministic business rules and safety controls to create a practical revenue recovery system.
+
+Instead of blindly retrying failed payments, RecoverAI follows a controlled workflow:
+
+```text
+Predict
+   ↓
+Decide
+   ↓
+Apply Safety Rules
+   ↓
+Recover When Allowed
+   ↓
+Measure
+   ↓
+Audit
+```
+
+The core idea is simple:
+
+> **Use AI to identify recovery opportunities, but use deterministic controls to decide what the system is allowed to do.**
+
+This makes RecoverAI an AI-powered revenue recovery system that is:
+
+- Predictive
+- Action-oriented
+- Measurable
+- Auditable
+- Safety-aware
+- Designed for bounded automation
+
+---
+
+## License
+
+This project is developed as a prototype for the Razorpay AI Buildathon.
